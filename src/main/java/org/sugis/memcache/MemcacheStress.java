@@ -14,13 +14,18 @@ import net.spy.memcached.MemcachedClient;
 import org.joda.time.Duration;
 
 import com.google.common.collect.ImmutableList;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 public class MemcacheStress implements Runnable {
 	private static final Random R = new Random();
 	private static final List<String> KEY_LIST =
 		Collections.synchronizedList(new ArrayList<String>());
 	private static long shutdownTime;
+	private static long startTime;
 	private static final MemcachedClient MC;
+
+	private static DateTimeFormatter formatter = DateTimeFormat.forPattern("H:m:s d MMMM, yyyy");
 	static {
 		try {
 			MC = new MemcachedClient(new DefaultConnectionFactory(),
@@ -35,7 +40,10 @@ public class MemcacheStress implements Runnable {
 
 
     public static void main( String[] args ) {
-    	shutdownTime = System.currentTimeMillis() + Duration.standardDays(2).getMillis();
+		startTime = System.currentTimeMillis();
+    	shutdownTime = startTime + Duration.standardDays(2).getMillis();
+		System.out.println("Started " + formatDate(startTime));
+		System.out.println(" Finish " + formatDate(shutdownTime));
     	for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++)
     		new Thread(new MemcacheStress()).start();
     }
@@ -44,9 +52,9 @@ public class MemcacheStress implements Runnable {
 	public void run() {
     	try {
     		runUnsafe();
-    	} catch (IOException e) {
+    	} catch (Throwable e) {
     		e.printStackTrace();
-    		throw new RuntimeException(e);
+			System.out.println("Failed " + formatDate(System.currentTimeMillis()));
     	}
     }
 
@@ -66,7 +74,12 @@ public class MemcacheStress implements Runnable {
 			MC.get(key);
 			gets++;
 		}
+		System.out.println("Finished " + formatDate(System.currentTimeMillis()));
 		System.out.println(gets + " gets and " + sets + " sets");
 		System.exit(0);
+	}
+
+	private static String formatDate(final long date) {
+		return formatter.print(date);
 	}
 }
